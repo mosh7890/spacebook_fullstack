@@ -1,8 +1,23 @@
-var SpacebookApp = function() {
+var SpacebookApp = function () {
 
   var posts = [];
 
   var $posts = $(".posts");
+
+  var fetch = function () {
+    $.ajax({
+      method: "GET",
+      url: '/posts',
+      success: function (data) {
+        console.log(data);
+        posts = data;
+        _renderPosts();
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(textStatus);
+      }
+    });
+  };
 
   _renderPosts();
 
@@ -12,17 +27,24 @@ var SpacebookApp = function() {
     var template = Handlebars.compile(source);
     for (var i = 0; i < posts.length; i++) {
       var newHTML = template(posts[i]);
-      console.log(newHTML);
       $posts.append(newHTML);
       _renderComments(i)
     }
   }
 
   function addPost(newPost) {
-    posts.push({ text: newPost, comments: [] });
-    _renderPosts();
+    $.ajax({
+      type: "POST",
+      url: '/posts',
+      data: newPost,
+      success: function (data) {
+        fetch();
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(textStatus);
+      }
+    });
   }
-
 
   function _renderComments(postIndex) {
     var post = $(".post")[postIndex];
@@ -36,20 +58,44 @@ var SpacebookApp = function() {
     }
   }
 
-  var removePost = function(index) {
-    posts.splice(index, 1);
-    _renderPosts();
+  var removePost = function (id) {
+    $.ajax({
+      type: "DELETE",
+      url: '/posts/' + id,
+      success: function (data) {
+        fetch();
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(textStatus);
+      }
+    })
   };
 
-  var addComment = function(newComment, postIndex) {
-    posts[postIndex].comments.push(newComment);
-    _renderComments(postIndex);
+  var addComment = function (newComment, id) {
+    $.ajax({
+      type: "POST",
+      url: '/posts/' + id + '/comments',
+      data: newComment,
+      success: function (data) {
+        fetch();
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(textStatus);
+      }
+    });
   };
 
-
-  var deleteComment = function(postIndex, commentIndex) {
-    posts[postIndex].comments.splice(commentIndex, 1);
-    _renderComments(postIndex);
+  var deleteComment = function (postID, commentID) {
+    $.ajax({
+      type: "DELETE",
+      url: '/posts/' + postID + '/comments/' + commentID,
+      success: function (data) {
+        fetch();
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(textStatus);
+      }
+    })
   };
 
   return {
@@ -57,13 +103,15 @@ var SpacebookApp = function() {
     removePost: removePost,
     addComment: addComment,
     deleteComment: deleteComment,
+    fetch: fetch,
   };
 };
 
 var app = SpacebookApp();
 
+app.fetch();
 
-$('#addpost').on('click', function() {
+$('#addpost').on('click', function () {
   var $input = $("#postText");
   if ($input.val() === "") {
     alert("Please enter text!");
@@ -75,17 +123,17 @@ $('#addpost').on('click', function() {
 
 var $posts = $(".posts");
 
-$posts.on('click', '.remove-post', function() {
-  var index = $(this).closest('.post').index();;
-  app.removePost(index);
+$posts.on('click', '.remove-post', function () {
+  var id = $(this).closest('.post').data().id;
+  app.removePost(id);
 });
 
-$posts.on('click', '.toggle-comments', function() {
+$posts.on('click', '.toggle-comments', function () {
   var $clickedPost = $(this).closest('.post');
   $clickedPost.find('.comments-container').toggleClass('show');
 });
 
-$posts.on('click', '.add-comment', function() {
+$posts.on('click', '.add-comment', function () {
 
   var $comment = $(this).siblings('.comment');
   var $user = $(this).siblings('.name');
@@ -95,20 +143,21 @@ $posts.on('click', '.add-comment', function() {
     return;
   }
 
-  var postIndex = $(this).closest('.post').index();
-  var newComment = { text: $comment.val(), user: $user.val() };
+  var id = $(this).closest('.post').data().id;
 
-  app.addComment(newComment, postIndex);
+  var newComment = { text: $comment.val(), username: $user.val() };
+
+  app.addComment(newComment, id);
 
   $comment.val("");
   $user.val("");
 
 });
 
-$posts.on('click', '.remove-comment', function() {
+$posts.on('click', '.remove-comment', function () {
   var $commentsList = $(this).closest('.post').find('.comments-list');
-  var postIndex = $(this).closest('.post').index();
-  var commentIndex = $(this).closest('.comment').index();
+  var postID = $(this).closest('.post').data().id;
+  var commentID = $(this).closest('.comment').data().id;
 
-  app.deleteComment(postIndex, commentIndex);
+  app.deleteComment(postID, commentID);
 });
