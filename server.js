@@ -8,6 +8,7 @@ mongoose.connect('mongodb://localhost/day4_spacebook_fullstack', function () {
 })
 
 var Post = require('./models/postModel.js');
+
 var app = express();
 
 app.use(express.static('public'));
@@ -15,16 +16,15 @@ app.use(express.static('node_modules'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.get('/', function (req, res) {
-});
-
+// 1 - Get All Posts
 app.get('/posts', function (req, res) {
-  Post.find({}).exec(function (err, found) {
+  Post.find(function (err, data) {
     if (err) { return console.error(err); }
-    res.send(found);
+    res.send(data);
   });
 });
 
+// 2 - Add Posts
 app.post('/posts', function (req, res) {
   var temp = Object.keys(req.body)[0];;
   var myPost = new Post({
@@ -32,51 +32,46 @@ app.post('/posts', function (req, res) {
     comments: []
   });
 
-  Post.findOne({ text: myPost.text }, function (err, found) {
-    if (!found) {
-      myPost.save(function (err, result) {
+  Post.findOne({ text: myPost.text }, function (err, data) {
+    if (!data) {
+      myPost.save(function (err, data) {
         if (err) { return console.error(err); }
-        console.log('New Post');
-        console.log(result);
+        res.send(data);
       });
-      res.send();
-    }
-    else {
-      console.log('Found Post!, Not Saving!');
     }
   });
 });
 
-app.post('/posts/:id/comments', function (req, res) {
-  var id = req.params.id;
-  var myComment = req.body;
-  Post.findById(id, function (err, found) {
-    if (err) { return console.error(err); }
-    found.comments.push(myComment);
-    found.save();
-  });
-  res.send();
-});
-
+// 3 - Delete Posts
 app.delete('/posts/:id', function (req, res) {
-  var id = req.params.id;
-  Post.findByIdAndRemove(id, function (err, result) {
+  Post.findByIdAndRemove(req.params.id, function (err, data) {
     if (err) { return console.error(err); }
-    res.send();
+    res.send(data);
   });
 });
 
+// 4 - Add Comments
+app.post('/posts/:id/comments', function (req, res) {
+  Post.findById(req.params.id, function (err, data) {
+    if (err) { return console.error(err); }
+    data.comments.push(req.body);
+    data.save();
+    res.send(data);
+  });
+});
+
+//5 - Delete Comments
 app.delete('/posts/:id/comments/:id2', function (req, res) {
   var postID = req.params.id;
   var commentID = req.params.id2;
-  Post.findById(postID, function (err, result) {
+  Post.findById(postID, function (err, data) {
     if (err) { return console.error(err); }
-    result.comments.id(commentID).remove();
-    result.save();
+    data.comments.id(commentID).remove();
+    data.save();
+    res.send(data);
   });
-  res.send();
 });
 
 app.listen(8000, function () {
-  console.log("what do you want from me! get me on 8000 ;-)");
+  console.log("What do you want from me! Get me on 8000 ;-)");
 });

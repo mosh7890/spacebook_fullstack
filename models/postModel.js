@@ -2,12 +2,12 @@ var mongoose = require('mongoose');
 
 var Schema = mongoose.Schema;
 
-var commentSchema = new mongoose.Schema({
+var commentSchema = new Schema({
     text: String,
     username: String
 });
 
-var postSchema = new mongoose.Schema({
+var postSchema = new Schema({
     text: String,
     comments: [commentSchema]
 });
